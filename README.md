@@ -14,7 +14,7 @@ SecureCall OS is a web-based simulation of a secure kernel system call interface
 ## Usage
 
 1. Clone or download the repository to your local machine.
-2. Open `syscall-interface.html` in any modern web browser.
+2. Open `index.html` in any modern web browser.
 3. Access the portal using the demo credentials provided on the login screen:
    - Admin: `root` / `admin123`
    - Developer: `dev1` / `dev123`
@@ -23,6 +23,6 @@ SecureCall OS is a web-based simulation of a secure kernel system call interface
 
 ## Project Structure
 
-- `syscall-interface.html`: Core HTML structure rendering the application UI elements.
+- `index.html`: Core HTML structure rendering the application UI elements.
 - `styles.css`: The custom styling layout to provide a sleek, dark-themed OS aesthetic.
 - `script.js`: The underlying frontend logic powering the dashboards, terminal operations, state management, and simulated telemetry data.
