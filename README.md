@@ -26,3 +26,12 @@ SecureCall OS is a web-based simulation of a secure kernel system call interface
 - `index.html`: Core HTML structure rendering the application UI elements.
 - `styles.css`: The custom styling layout to provide a sleek, dark-themed OS aesthetic.
 - `script.js`: The underlying frontend logic powering the dashboards, terminal operations, state management, and simulated telemetry data.
+
+## Deployment
+
+This project is fully static and natively compatible with [Vercel](https://vercel.com). Deployment is seamless:
+
+1. Log in to your Vercel account.
+2. Click **Add New** > **Project** and import your GitHub repository (`SecureCall-OS`).
+3. Ensure the Framework Preset is set to `Other`, and leave all build settings as their defaults.
+4. Click **Deploy**. Vercel will automatically detect `index.html` and serve your project!
