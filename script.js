@@ -53,9 +53,10 @@ function doLogin() {
 
   if (!USERS[user]) { showErr('Unknown username.'); return; }
   if (USERS[user].pass !== pass) { showErr('Incorrect password.'); return; }
-  if (USERS[user].role !== selectedRole && !(selectedRole === 'auditor' && USERS[user].role === 'auditor')) {
-    // allow any user with matching role
-  }
+  if (USERS[user].role !== selectedRole) { 
+    showErr('Unauthorized role for this user.'); 
+    return; 
+}
   const needMfa = (selectedRole === 'admin' || selectedRole === 'dev');
   if (needMfa) {
     const code = ['d1','d2','d3','d4','d5','d6'].map(id => document.getElementById(id).value).join('');
@@ -109,7 +110,10 @@ function startSessionTimer(durationMinutes = 30) {
     if (remaining <= 300) {
       timerEl.style.color = '#ef4444';
       timerEl.style.animation = 'pulse 1s infinite';
-    }
+    } else {
+      timerEl.style.color = '#22c55e';
+      timerEl.style.animation = 'none';
+  }
   }
 
   updateUI();
@@ -165,7 +169,7 @@ function initApp() {
   startSessionTimer(30);
 }
 
-// =================== SYSCALL GRID ===================
+=================== SYSCALL GRID ===================
 function buildSyscallGrid() {
   const grid = document.getElementById('syscall-grid');
   const userPerms = ROLE_PERMS[currentRole];
@@ -445,31 +449,54 @@ function revokeUser(username) {
   // future: remove from USERS or update role
 }
 // =================== PERM MATRIX ===================
-function buildPermMatrix() {
+// 1. Keep data outside the function for performance
+const SYSCALL_MATRIX = SYSCALLS.map(s => ({
+  name: s.name,
+  category: s.cat,
+  admin: true,
+  dev: s.perm === 'all' || s.perm === 'dev',
+  user: s.perm === 'all',
+  auditor: s.perm === 'all'
+}));
+
+function buildPermMatrix(filter = '') {
   const tbody = document.getElementById('perm-matrix');
-  const matrix = [
-    { sc:'read',    a:1, d:1, u:1, au:1 },
-    { sc:'write',   a:1, d:1, u:1, au:0 },
-    { sc:'open',    a:1, d:1, u:1, au:1 },
-    { sc:'close',   a:1, d:1, u:1, au:1 },
-    { sc:'fork',    a:1, d:1, u:0, au:0 },
-    { sc:'execve',  a:1, d:1, u:0, au:0 },
-    { sc:'kill',    a:1, d:0, u:0, au:0 },
-    { sc:'mmap',    a:1, d:1, u:0, au:0 },
-    { sc:'socket',  a:1, d:1, u:0, au:0 },
-    { sc:'setuid',  a:1, d:0, u:0, au:0 },
-    { sc:'chroot',  a:1, d:0, u:0, au:0 },
-    { sc:'getpid',  a:1, d:1, u:1, au:1 },
-    { sc:'getuid',  a:1, d:1, u:1, au:1 },
-  ];
-  tbody.innerHTML = matrix.map(r => `
+  if (!tbody) return;
+
+  // 2. Filter logic looks great
+  const filtered = SYSCALL_MATRIX.filter(s =>
+    s.name.toLowerCase().includes(filter.toLowerCase()) ||
+    s.category.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  // 3. Helper for icons
+  const getStatusCell = (val) =>
+    val
+      ? `<td style="text-align:center;color:#16a34a;font-weight:600;">✓</td>`
+      : `<td style="text-align:center;color:#dc2626;">✗</td>`;
+
+  // 4. Update DOM
+  if (filtered.length === 0) {
+  tbody.innerHTML = `
     <tr>
-      <td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--accent)">${r.sc}()</td>
-      <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:center">${r.a?'<span style="color:var(--success)">✓</span>':'<span style="color:var(--text3)">✗</span>'}</td>
-      <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:center">${r.d?'<span style="color:var(--success)">✓</span>':'<span style="color:var(--text3)">✗</span>'}</td>
-      <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:center">${r.u?'<span style="color:var(--success)">✓</span>':'<span style="color:var(--text3)">✗</span>'}</td>
-      <td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:center">${r.au?'<span style="color:var(--success)">✓</span>':'<span style="color:var(--text3)">✗</span>'}</td>
-    </tr>`).join('');
+      <td colspan="6" style="text-align:center;padding:20px;color:#9ca3af;">
+        No matching syscalls found
+      </td>
+    </tr>
+  `;
+  return;
+}
+
+tbody.innerHTML = filtered.map(s => `
+  <tr>
+    <td style="padding:8px 12px;font-family:monospace;font-size:13px;">${s.name}</td>
+    <td style="padding:8px 12px;font-size:12px;color:#6b7280;">${s.category}</td>
+    ${getStatusCell(s.admin)}
+    ${getStatusCell(s.dev)}
+    ${getStatusCell(s.user)}
+    ${getStatusCell(s.auditor)}
+  </tr>
+`).join('');
 }
 
 // =================== CHART ===================
