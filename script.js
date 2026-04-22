@@ -74,12 +74,61 @@ function showErr(msg) {
 
 function doLogout() {
   addLog(currentUser, 'logout', '', 1, 'success', 0);
+
+  // ✅ Stop session timer
+  if (window._sessionTimer) {
+    clearInterval(window._sessionTimer);
+    window._sessionTimer = null;
+  }
+
   document.getElementById('login-screen').classList.add('active');
   document.getElementById('app-screen').classList.remove('active');
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
   document.getElementById('login-error').style.display = 'none';
   ['d1','d2','d3','d4','d5','d6'].forEach(id => document.getElementById(id).value = '');
+}
+
+// =================== SESSION TIMER ===================
+function startSessionTimer(durationMinutes = 30) {
+  // Prevent multiple timers
+  if (window._sessionTimer) {
+    clearInterval(window._sessionTimer);
+  }
+
+  let remaining = durationMinutes * 60;
+  const timerEl = document.getElementById('session-timer');
+
+  function updateUI() {
+    if (!timerEl) return;
+
+    const mins = String(Math.floor(remaining / 60)).padStart(2, '0');
+    const secs = String(remaining % 60).padStart(2, '0');
+    timerEl.textContent = `⏱ ${mins}:${secs}`;
+
+    if (remaining <= 300) {
+      timerEl.style.color = '#ef4444';
+      timerEl.style.animation = 'pulse 1s infinite';
+    }
+  }
+
+  updateUI();
+
+  const interval = setInterval(() => {
+    remaining--;
+
+    updateUI();
+
+    if (remaining <= 0) {
+      clearInterval(interval);
+      window._sessionTimer = null;
+
+      alert('Session expired. You have been logged out for security.');
+      doLogout(); // integrate with your system
+    }
+  }, 1000);
+
+  window._sessionTimer = interval;
 }
 
 // =================== APP INIT ===================
@@ -113,6 +162,7 @@ function initApp() {
   startLiveFeed();
   termPrint({type:'ok', text:'Session authenticated — Welcome, ' + USERS[currentUser].name + ' [' + currentRole.toUpperCase() + ']'});
   termPrint({type:'info', text:'Session ID: ' + sessionId + ' | ' + new Date().toISOString()});
+  startSessionTimer(30);
 }
 
 // =================== SYSCALL GRID ===================
@@ -303,6 +353,8 @@ function exportLogs() {
 // =================== USERS TABLE ===================
 function buildUsersTable() {
   const tbody = document.getElementById('users-tbody');
+  if (!tbody) return;
+
   const usersData = [
     { user:'root',  name:'Root Admin',    role:'admin',   ava:'RA', avaClass:'ava-red',    online:true,  login:'2025-03-15 14:00', perms:['read','write','execve','kill','setuid','chroot'] },
     { user:'dev1',  name:'Dev User 1',    role:'dev',     ava:'D1', avaClass:'ava-blue',   online:true,  login:'2025-03-15 13:22', perms:['read','write','open','fork','execve','mmap','socket'] },
@@ -310,34 +362,88 @@ function buildUsersTable() {
     { user:'user1', name:'Standard User', role:'user',    ava:'U1', avaClass:'ava-green',  online:true,  login:'2025-03-15 09:10', perms:['read','write','open','close','exit','getuid','getpid'] },
     { user:'audit', name:'Auditor',       role:'auditor', ava:'AU', avaClass:'ava-purple', online:true,  login:'2025-03-15 08:00', perms:['read','getuid','getpid'] },
   ];
-  tbody.innerHTML = usersData.map(u => `
-    <tr>
-      <td>
-        <div class="user-info">
-          <div class="user-ava ${u.avaClass}">${u.ava}</div>
-          <div>
-            <div style="font-weight:600;font-size:13px">${u.name}</div>
-            <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${u.user}</div>
+
+  // Role badge helper
+  function getRoleClass(role) {
+    if (role === 'admin') return 'admin';
+    if (role === 'dev') return 'dev';
+    if (role === 'auditor') return 'auditor';
+    return 'user';
+  }
+
+  // Render rows
+  tbody.innerHTML = usersData.map(u => {
+    const permsHTML = u.perms.map(p => 
+      `<span class="mini-perm mp-g">${p}</span>`
+    ).join('');
+
+    return `
+      <tr>
+        <!-- USER INFO -->
+        <td>
+          <div class="user-info">
+            <div class="user-ava ${u.avaClass}">${u.ava}</div>
+            <div>
+              <div style="font-weight:600;font-size:13px">${u.name}</div>
+              <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">
+                ${u.user}
+              </div>
+            </div>
           </div>
-        </div>
-      </td>
-      <td><span class="user-role-badge role-${u.role==='admin'?'admin':u.role==='dev'?'dev':'user'}">${u.role}</span></td>
-      <td><span class="online-dot ${u.online?'dot-on':'dot-off'}"></span>${u.online?'Online':'Offline'}</td>
-      <td style="font-family:var(--font-mono);font-size:11.5px;color:var(--text2)">${u.login}</td>
-      <td>
-        <div class="perm-table">
-          ${u.perms.map(p=>`<span class="mini-perm mp-g">${p}</span>`).join('')}
-        </div>
-      </td>
-      <td>
-        <div style="display:flex;gap:6px">
-          <button class="action-btn" onclick="alert('Edit user: ${u.user}')">Edit</button>
-          <button class="action-btn danger" onclick="alert('Revoke access: ${u.user}')">Revoke</button>
-        </div>
-      </td>
-    </tr>`).join('');
+        </td>
+
+        <!-- ROLE -->
+        <td>
+          <span class="user-role-badge role-${getRoleClass(u.role)}">
+            ${u.role.toUpperCase()}
+          </span>
+        </td>
+
+        <!-- STATUS -->
+        <td>
+          <span class="online-dot ${u.online ? 'dot-on' : 'dot-off'}"></span>
+          ${u.online ? 'Online' : 'Offline'}
+        </td>
+
+        <!-- LAST LOGIN -->
+        <td style="font-family:var(--font-mono);font-size:11.5px;color:var(--text2)">
+          ${u.login}
+        </td>
+
+        <!-- PERMISSIONS -->
+        <td>
+          <div class="perm-table">
+            ${permsHTML}
+          </div>
+        </td>
+
+        <!-- ACTIONS -->
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="action-btn" onclick="editUser('${u.user}')">
+              Edit
+            </button>
+            <button class="action-btn danger" onclick="revokeUser('${u.user}')">
+              Revoke
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+function editUser(username) {
+  alert(`Edit user: ${username}`);
+  // future: open modal / edit form
 }
 
+function revokeUser(username) {
+  const confirmAction = confirm(`Revoke access for ${username}?`);
+  if (!confirmAction) return;
+
+  alert(`Access revoked for ${username}`);
+  // future: remove from USERS or update role
+}
 // =================== PERM MATRIX ===================
 function buildPermMatrix() {
   const tbody = document.getElementById('perm-matrix');
