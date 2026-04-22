@@ -396,6 +396,12 @@
       <!-- System call permission matrix -->
       <div class="security-card">
         <div class="sec-card-title"><span class="sec-icon">📋</span> Syscall Permission Matrix</div>
+        <input
+          type="text" 
+          placeholder="Filter syscalls..." 
+          oninput="buildPermMatrix(this.value)"
+          style="margin:12px 0;padding:6px 10px;border:1px solid var(--border);border-radius:6px;width:250px;background:var(--bg3);color:var(--text1);"
+        />
         <div style="overflow-x:auto;">
           <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:var(--font-mono);">
             <thead>
