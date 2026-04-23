@@ -53,10 +53,10 @@ function doLogin() {
 
   if (!USERS[user]) { showErr('Unknown username.'); return; }
   if (USERS[user].pass !== pass) { showErr('Incorrect password.'); return; }
-  if (USERS[user].role !== selectedRole) { 
-    showErr('Unauthorized role for this user.'); 
-    return; 
-}
+  selectedRole = USERS[user].role;
+  document.querySelectorAll('.role-btn').forEach(b => {
+  b.classList.toggle('selected', b.dataset.role === selectedRole);
+});
   const needMfa = (selectedRole === 'admin' || selectedRole === 'dev');
   if (needMfa) {
     const code = ['d1','d2','d3','d4','d5','d6'].map(id => document.getElementById(id).value).join('');
@@ -144,7 +144,12 @@ function initApp() {
   document.getElementById('top-avatar').textContent = currentUser[0].toUpperCase();
   const roleEl = document.getElementById('top-role');
   roleEl.textContent = currentRole;
-  roleEl.className = 'user-role-badge role-' + (currentRole==='admin'?'admin':currentRole==='dev'?'dev':'user');
+  roleEl.className = 'user-role-badge role-' + (
+  currentRole === 'admin' ? 'admin' :
+  currentRole === 'dev' ? 'dev' :
+  currentRole === 'auditor' ? 'auditor' :
+  'user'
+);
   document.getElementById('term-prompt').textContent = currentUser + '@securecall:~$';
   document.getElementById('session-id').textContent = sessionId;
   document.getElementById('role-notice').textContent = '🔑 Role: ' + currentRole.toUpperCase();
@@ -308,7 +313,7 @@ function execCommand() {
 // =================== LOGS ===================
 function addLog(user, syscall, args, pid, status, ret) {
   logs.unshift({
-    id: logs.length + 1,
+    id: Date.now(),
     ts: new Date().toISOString().replace('T',' ').slice(0,19),
     user, syscall, args, pid, status, ret
   });
@@ -346,12 +351,38 @@ function filterLogs(f, btn) {
   renderLogs();
 }
 
-function exportLogs() {
-  const header = 'ID,Timestamp,User,Syscall,Args,PID,Status,Return\n';
-  const rows = logs.map(l => `${l.id},"${l.ts}","${l.user}","${l.syscall}","${l.args}",${l.pid},${l.status},${l.ret}`).join('\n');
-  const blob = new Blob([header+rows], {type:'text/csv'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = 'syscall_audit_log.csv'; a.click();
+function exportAuditLogCSV() {
+  if (!logs || logs.length === 0) {
+    alert('No log entries to export.');
+    return;
+  }
+
+  const headers = ['#', 'Timestamp', 'User', 'Syscall', 'Arguments', 'PID', 'Status', 'Return'];
+
+  const rows = logs.map((entry, i) => [
+    i + 1,
+    entry.ts,
+    entry.user,
+    entry.syscall,
+    `"${String(entry.args || '').replace(/"/g, '""')}"`,
+    entry.pid,
+    entry.status,
+    entry.ret ?? 0
+  ]);
+
+  const csvContent = [headers, ...rows]
+    .map(r => r.join(','))
+    .join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `securecall_audit_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+
+  URL.revokeObjectURL(url);
 }
 
 // =================== USERS TABLE ===================
