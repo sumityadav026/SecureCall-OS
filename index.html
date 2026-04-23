@@ -30,7 +30,7 @@
     </div>
     <div class="form-group">
       <label class="form-label">Password</label>
-      <input type="password" class="form-input" id="login-pass" placeholder="Enter password" id="login-pass">
+      <input type="password" class="form-input" id="login-pass" placeholder="Enter password">
     </div>
     <div class="form-group">
       <label class="form-label">Access Role</label>
@@ -236,7 +236,7 @@
         <button class="log-filter-btn" onclick="filterLogs('denied',this)">Denied</button>
         <button class="log-filter-btn" onclick="filterLogs('warning',this)">Warnings</button>
         <input type="text" class="search-input" id="log-search" placeholder="Search by user, syscall, path..." oninput="renderLogs()">
-        <button class="log-filter-btn" onclick="exportLogs()" style="margin-left:auto;border-color:var(--accent);color:var(--accent)">⬇ Export CSV</button>
+        <button class="log-filter-btn" onclick="exportAuditLogCSV()" style="margin-left:auto;border-color:var(--accent);color:var(--accent)">⬇ Export CSV</button>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
         <table class="log-table">
