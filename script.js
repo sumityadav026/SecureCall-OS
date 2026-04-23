@@ -169,7 +169,7 @@ function initApp() {
   startSessionTimer(30);
 }
 
-=================== SYSCALL GRID ===================
+//=================== SYSCALL GRID ===================
 function buildSyscallGrid() {
   const grid = document.getElementById('syscall-grid');
   const userPerms = ROLE_PERMS[currentRole];
