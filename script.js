@@ -69,6 +69,10 @@ function doLogin() {
   showToast(`Welcome ${USERS[currentUser].name}`, 'success');
 }
 
+function showToast(message, type = 'success') {
+  console.log(`[${type.toUpperCase()}] ${message}`);
+}
+
 function showErr(msg) {
   const e = document.getElementById('login-error');
   e.textContent = msg; e.style.display = 'block';
