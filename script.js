@@ -280,39 +280,59 @@ function termPrint(item) {
 }
 
 function execCommand() {
-  const inp = document.getElementById('term-input');
-  const cmd = inp.value.trim();
-  if (!cmd) return;
-  inp.value = '';
-  termPrint({type:'prompt', text: cmd});
+  const inputEl = document.getElementById('term-input');
+  const input = inputEl.value.trim();
 
-  const parts = cmd.split(' ');
-  const op = parts[0].toLowerCase();
-  const found = SYSCALLS.find(s => s.name === op);
+  if (!input) return;
 
-  if (found) {
-    const canUse = ROLE_PERMS[currentRole].includes(found.perm);
-    if (!canUse) {
-      termPrint({type:'err', text:'Permission denied: ' + op + '() requires ' + found.perm + ' privilege'});
-      addLog(currentUser, found.name, parts.slice(1).join(' '), Math.floor(Math.random()*9000+1000), 'denied', -1);
-    } else {
-      const pid = Math.floor(Math.random()*9000+1000);
-      const ret = Math.floor(Math.random()*100);
-      termPrint({type:'ok', text:'→ ' + op + '(' + parts.slice(1).join(', ') + ') = ' + ret + ' [PID ' + pid + ']'});
-      addLog(currentUser, found.name, parts.slice(1).join(' '), pid, 'success', ret);
-    }
-  } else if (op === 'help') {
-    termPrint({type:'info', text:'Available syscalls: ' + SYSCALLS.map(s=>s.name).join(', ')});
-    termPrint({type:'info', text:'Usage: <syscall> [args...]'});
-  } else if (op === 'whoami') {
-    termPrint({type:'ok', text: currentUser + ' [' + currentRole + '] — Session: ' + sessionId});
-  } else if (op === 'clear') {
-    document.getElementById('terminal-body').innerHTML = '';
-  } else if (op === 'ls') {
-    termPrint({type:'ok', text:'bin/  etc/  home/  tmp/  usr/  var/'});
-  } else {
-    termPrint({type:'warn', text:'Command not found: ' + op + '. Type "help" for available syscalls.'});
+  termPrint({ type: 'prompt', text: input });
+
+  // Extract syscall name
+  const match = input.match(/^(\w+)\((.*)\)$/);
+
+  if (!match) {
+    termPrint({ type: 'err', text: 'Invalid command format' });
+    showToast('Invalid syscall format', 'error');
+    inputEl.value = '';
+    return;
   }
+
+  const name = match[1];
+  const argsRaw = match[2];
+  const args = argsRaw ? argsRaw.split(',').map(a => a.trim()) : [];
+
+  // Find syscall
+  const syscall = SYSCALLS.find(s => s.name === name);
+
+  if (!syscall) {
+    termPrint({ type: 'err', text: `Unknown syscall: ${name}` });
+    showToast(`Unknown syscall: ${name}`, 'error');
+    inputEl.value = '';
+    return;
+  }
+
+  // Permission check
+  if (!ROLE_PERMS[currentRole].includes(syscall.perm)) {
+    termPrint({ type: 'err', text: `${name}() denied — insufficient privileges` });
+    showToast(`${name}() denied`, 'error');
+    addLog(currentUser, name, args.join(', '), 0, 'denied', -1);
+    inputEl.value = '';
+    return;
+  }
+
+  // ✅ SET ACTIVE SYSCALL (important)
+  activeSyscall = syscall;
+
+  // Fill params (simulate modal input)
+  syscall.params.forEach((p, i) => {
+    const el = document.getElementById('param-' + p);
+    if (el) el.value = args[i] || '';
+  });
+
+  // ✅ EXECUTE REAL LOGIC
+  runSyscall();
+
+  inputEl.value = '';
 }
 
 // =================== LOGS ===================
