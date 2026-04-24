@@ -202,15 +202,34 @@ function showDenied() {
 // =================== MODAL ===================
 function openModal(id) {
   activeSyscall = SYSCALLS.find(s => s.id === id);
+
+  // ✅ 1. SHOW TERMINAL PREVIEW FIRST (instant feedback)
+  const preview = activeSyscall.name + '(' + activeSyscall.params.map(p => getDefaultParam(p)).join(', ') + ')';
+  termPrint({ type: 'prompt', text: preview });
+  showToast(`${activeSyscall.name}() ready to execute`, 'info');
+
+  // ✅ 2. PREPARE MODAL CONTENT
   document.getElementById('modal-title').textContent = activeSyscall.name + '()';
   document.getElementById('modal-sub').textContent = activeSyscall.desc + ' · Category: ' + activeSyscall.cat;
+
   let paramsHtml = '';
   activeSyscall.params.forEach(p => {
-    paramsHtml += `<div class="param-group"><div class="param-label">${p}</div><input class="param-input" id="param-${p}" placeholder="Enter ${p}..." value="${getDefaultParam(p)}"></div>`;
+    paramsHtml += `
+      <div class="param-group">
+        <div class="param-label">${p}</div>
+        <input class="param-input" id="param-${p}" placeholder="Enter ${p}..." value="${getDefaultParam(p)}">
+      </div>`;
   });
   document.getElementById('modal-params').innerHTML = paramsHtml;
   document.getElementById('modal-code').innerHTML = generateSyscallDoc(activeSyscall);
-  document.getElementById('syscall-modal').classList.add('open');
+  
+  // ✅ 3. CONTROL EXECUTION MODE
+  const autoRun = false;
+  if (autoRun) {
+    runSyscall();
+  } else {
+    document.getElementById('syscall-modal').classList.add('open');
+  }
 }
 
 function getDefaultParam(p) {
@@ -242,7 +261,7 @@ function runSyscall() {
   const success = Math.random() > 0.15;
   const ret = success ? Math.floor(Math.random()*10) : -1;
 
-  termPrint({type:'prompt', text: activeSyscall.name + '(' + args + ')'});
+  termPrint({ type: 'info-t', text: `→ Executing ${activeSyscall.name}()...` });
 
   setTimeout(() => {
     if (success) {
