@@ -298,7 +298,7 @@ function termPrint(item) {
   body.scrollTop = body.scrollHeight;
 }
 
-function execCommand() {
+function runTerminalCommand() {
   const inputEl = document.getElementById('term-input');
   const input = inputEl.value.trim();
 
@@ -638,3 +638,4 @@ for (let i=0; i<40; i++) {
   const d = new Date(Date.now() - Math.random()*3600000*8);
   logs.push({ id: 40-i, ts: d.toISOString().replace('T',' ').slice(0,19), user:u, syscall:sc, args:'/tmp/file_'+i, pid, status:s, ret });
 }
+window.runTerminalCommand = runTerminalCommand;
