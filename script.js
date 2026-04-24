@@ -66,6 +66,7 @@ function doLogin() {
   currentUser = user; currentRole = USERS[user].role;
   addLog(user, 'login', '', 1, 'success', 0);
   initApp();
+  showToast(`Welcome ${USERS[currentUser].name}`, 'success');
 }
 
 function showErr(msg) {
@@ -127,7 +128,7 @@ function startSessionTimer(durationMinutes = 30) {
       clearInterval(interval);
       window._sessionTimer = null;
 
-      alert('Session expired. You have been logged out for security.');
+      showToast('Session expired — logged out for security', 'warning');
       doLogout(); // integrate with your system
     }
   }, 1000);
@@ -235,17 +236,21 @@ function closeModal() {
 
 function runSyscall() {
   if (!activeSyscall) return;
+
   const pid = Math.floor(Math.random()*9000+1000);
   const args = activeSyscall.params.map(p => document.getElementById('param-'+p)?.value || '').join(', ');
   const success = Math.random() > 0.15;
   const ret = success ? Math.floor(Math.random()*10) : -1;
 
   termPrint({type:'prompt', text: activeSyscall.name + '(' + args + ')'});
+
   setTimeout(() => {
     if (success) {
       termPrint({type:'ok', text:'✓ ' + activeSyscall.name + '() returned ' + ret + ' [PID ' + pid + '] — logged to audit trail'});
+      showToast(`${activeSyscall.name}() executed — PID ${pid}`, 'success');
     } else {
       termPrint({type:'err', text:'✗ ' + activeSyscall.name + '() failed: EACCES(13) — Permission denied [PID ' + pid + ']'});
+      showToast(`${activeSyscall.name}() denied`, 'error');
     }
   }, 300);
 
@@ -353,7 +358,7 @@ function filterLogs(f, btn) {
 
 function exportAuditLogCSV() {
   if (!logs || logs.length === 0) {
-    alert('No log entries to export.');
+    showToast('No log entries to export', 'warning');
     return;
   }
 
@@ -383,8 +388,9 @@ function exportAuditLogCSV() {
   a.click();
 
   URL.revokeObjectURL(url);
-}
 
+  showToast('Audit log exported successfully', 'success');
+}
 // =================== USERS TABLE ===================
 function buildUsersTable() {
   const tbody = document.getElementById('users-tbody');
@@ -468,7 +474,7 @@ function buildUsersTable() {
   }).join('');
 }
 function editUser(username) {
-  alert(`Edit user: ${username}`);
+  showToast(`Edit user: ${username}`, 'info');
   // future: open modal / edit form
 }
 
@@ -476,7 +482,7 @@ function revokeUser(username) {
   const confirmAction = confirm(`Revoke access for ${username}?`);
   if (!confirmAction) return;
 
-  alert(`Access revoked for ${username}`);
+  showToast(`Access revoked for ${username}`, 'warning');
   // future: remove from USERS or update role
 }
 // =================== PERM MATRIX ===================
@@ -546,6 +552,7 @@ function buildActivityChart() {
 // =================== LIVE FEED ===================
 const feedSyscalls = ['read','write','open','close','fork','getpid','getuid','mmap','socket','execve'];
 const feedUsers = ['dev1','user1','root','audit'];
+
 function startLiveFeed() {
   const feed = document.getElementById('live-feed');
   function addFeedItem() {
@@ -562,8 +569,9 @@ function startLiveFeed() {
     if (feed.children.length > 20) feed.removeChild(feed.lastChild);
   }
   addFeedItem();
-  setInterval(addFeedItem, 2200);
-}
+  if (window._feedInterval) clearInterval(window._feedInterval);
+  window._feedInterval = setInterval(addFeedItem, 2200);
+} 
 
 function updateStats() {
   document.getElementById('stat-total').textContent = (2847 + logs.filter(l=>l.status==='success').length).toLocaleString();
