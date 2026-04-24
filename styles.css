@@ -672,3 +672,31 @@
   from { width: 100%; }
   to   { width: 0%; }
 }
+
+/* ===== FIX: SECURITY MATRIX TABLE ===== */
+#tab-security table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+#tab-security th,
+#tab-security td {
+  padding: 10px 12px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+#tab-security th:first-child,
+#tab-security td:first-child {
+  text-align: left;
+}
+
+#tab-security th {
+  font-weight: 600;
+  font-size: 11px;
+}
+
+#tab-security td {
+  font-size: 12px;
+}
