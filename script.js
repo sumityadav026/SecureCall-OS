@@ -353,10 +353,10 @@ function runTerminalCommand() {
     return;
   }
 
-  // ✅ CRITICAL FIX
+  // ✅ set active syscall
   activeSyscall = syscall;
 
-  // ✅ simulate modal param input (SAFE)
+  // ✅ simulate params
   syscall.params.forEach((p, i) => {
     const fakeInput = document.createElement('input');
     fakeInput.value = args[i] || '';
@@ -366,48 +366,11 @@ function runTerminalCommand() {
 
   runSyscall();
 
-  // cleanup fake inputs
+  // cleanup
   syscall.params.forEach(p => {
     const el = document.getElementById('param-' + p);
     if (el) el.remove();
   });
-
-  inputEl.value = '';
-}
-  const name = match[1];
-  const argsRaw = match[2];
-  const args = argsRaw ? argsRaw.split(',').map(a => a.trim()) : [];
-
-  // Find syscall
-  const syscall = SYSCALLS.find(s => s.name === name);
-
-  if (!syscall) {
-    termPrint({ type: 'err', text: `Unknown syscall: ${name}` });
-    showToast(`Unknown syscall: ${name}`, 'error');
-    inputEl.value = '';
-    return;
-  }
-
-  // Permission check
-  if (!ROLE_PERMS[currentRole].includes(syscall.perm)) {
-    termPrint({ type: 'err', text: `${name}() denied — insufficient privileges` });
-    showToast(`${name}() denied`, 'error');
-    addLog(currentUser, name, args.join(', '), 0, 'denied', -1);
-    inputEl.value = '';
-    return;
-  }
-
-  // ✅ SET ACTIVE SYSCALL (important)
-  activeSyscall = syscall;
-
-  // Fill params (simulate modal input)
-  syscall.params.forEach((p, i) => {
-    const el = document.getElementById('param-' + p);
-    if (el) el.value = args[i] || '';
-  });
-
-  // ✅ EXECUTE REAL LOGIC
-  runSyscall();
 
   inputEl.value = '';
 }
