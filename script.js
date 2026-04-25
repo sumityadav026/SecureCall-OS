@@ -33,19 +33,14 @@ let sessionId = 'SC-' + Math.floor(Math.random()*9000+1000);
 
 
 // =================== LOGIN ===================
+// =================== TOAST SYSTEM ===================
 function showToast(message, type = 'success') {
-  const icons = { success: '✓', error: '✗', warning: '⚠', info: 'ℹ' };
-
   const container = document.getElementById('toast-container');
   if (!container) return;
 
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.innerHTML = `
-    <span>${icons[type] || ''}</span>
-    <span>${message}</span>
-    <div class="toast-bar"></div>
-  `;
+  toast.innerText = message;
 
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
