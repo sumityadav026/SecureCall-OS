@@ -53,7 +53,10 @@ function doLogin() {
 
   if (!USERS[user]) { showErr('Unknown username.'); return; }
   if (USERS[user].pass !== pass) { showErr('Incorrect password.'); return; }
-  selectedRole = USERS[user].role;
+  if (USERS[user].role !== selectedRole) {
+    showErr('Selected role does not match user role');
+  return;
+  }
   document.querySelectorAll('.role-btn').forEach(b => {
   b.classList.toggle('selected', b.dataset.role === selectedRole);
 });
@@ -70,7 +73,21 @@ function doLogin() {
 }
 
 function showToast(message, type = 'success') {
-  console.log(`[${type.toUpperCase()}] ${message}`);
+  const icons = { success: '✓', error: '✗', warning: '⚠', info: 'ℹ' };
+
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <span>${icons[type] || ''}</span>
+    <span>${message}</span>
+    <div class="toast-bar"></div>
+  `;
+
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
 }
 
 function showErr(msg) {
@@ -310,7 +327,6 @@ function runTerminalCommand() {
 
   termPrint({ type: 'prompt', text: input });
 
-  // Extract syscall name
   const match = input.match(/^(\w+)\((.*)\)$/);
 
   if (!match) {
@@ -320,6 +336,48 @@ function runTerminalCommand() {
     return;
   }
 
+  const name = match[1];
+  const argsRaw = match[2];
+  const args = argsRaw ? argsRaw.split(',').map(a => a.trim()) : [];
+
+  const syscall = SYSCALLS.find(s => s.name === name);
+
+  if (!syscall) {
+    termPrint({ type: 'err', text: `Unknown syscall: ${name}` });
+    showToast(`Unknown syscall: ${name}`, 'error');
+    inputEl.value = '';
+    return;
+  }
+
+  if (!ROLE_PERMS[currentRole].includes(syscall.perm)) {
+    termPrint({ type: 'err', text: `${name}() denied — insufficient privileges` });
+    showToast(`${name}() denied`, 'error');
+    addLog(currentUser, name, args.join(', '), 0, 'denied', -1);
+    inputEl.value = '';
+    return;
+  }
+
+  // ✅ CRITICAL FIX
+  activeSyscall = syscall;
+
+  // ✅ simulate modal param input (SAFE)
+  syscall.params.forEach((p, i) => {
+    const fakeInput = document.createElement('input');
+    fakeInput.value = args[i] || '';
+    fakeInput.id = 'param-' + p;
+    document.body.appendChild(fakeInput);
+  });
+
+  runSyscall();
+
+  // cleanup fake inputs
+  syscall.params.forEach(p => {
+    const el = document.getElementById('param-' + p);
+    if (el) el.remove();
+  });
+
+  inputEl.value = '';
+}
   const name = match[1];
   const argsRaw = match[2];
   const args = argsRaw ? argsRaw.split(',').map(a => a.trim()) : [];
