@@ -274,24 +274,58 @@ function runSyscall() {
   if (!activeSyscall) return;
 
   const pid = Math.floor(Math.random()*9000+1000);
-  const args = activeSyscall.params.map(p => document.getElementById('param-'+p)?.value || '').join(', ');
-  const success = Math.random() > 0.15;
-  const ret = success ? Math.floor(Math.random()*10) : -1;
+  const args = activeSyscall.params
+    .map(p => document.getElementById('param-'+p)?.value || '')
+    .join(', ');
 
-  termPrint({ type: 'info-t', text: `→ Executing ${activeSyscall.name}()...` });
+  const success = Math.random() > 0.15;
+
+  let ret;
+  if (success) {
+    switch (activeSyscall.name) {
+      case 'read':
+        ret = Math.floor(Math.random() * 1024);
+        break;
+      case 'write':
+        ret = args.length;
+        break;
+      case 'getpid':
+        ret = pid;
+        break;
+      case 'exit':
+        ret = 0;
+        break;
+      default:
+        ret = Math.floor(Math.random() * 10);
+    }
+  } else {
+    ret = -1;
+  }
+
+  termPrint({
+    type: 'info-t',
+    text: `→ Executing ${activeSyscall.name}(${args})...`
+  });
 
   setTimeout(() => {
     if (success) {
-      termPrint({type:'ok', text:'✓ ' + activeSyscall.name + '() returned ' + ret + ' [PID ' + pid + '] — logged to audit trail'});
+      termPrint({
+        type: 'ok',
+        text: `✓ ${activeSyscall.name}() returned ${ret} [PID ${pid}]`
+      });
       showToast(`${activeSyscall.name}() executed — PID ${pid}`, 'success');
     } else {
-      termPrint({type:'err', text:'✗ ' + activeSyscall.name + '() failed: EACCES(13) — Permission denied [PID ' + pid + ']'});
+      termPrint({
+        type: 'err',
+        text: `✗ ${activeSyscall.name}() failed: EACCES (Permission denied) [PID ${pid}]`
+      });
       showToast(`${activeSyscall.name}() denied`, 'error');
     }
-  }, 300);
 
-  addLog(currentUser, activeSyscall.name, args, pid, success ? 'success' : 'denied', ret);
-  closeModal();
+    addLog(currentUser, activeSyscall.name, args, pid, success ? 'success' : 'denied', ret);
+    closeModal();
+
+  }, 600 + Math.random() * 800);
 }
 
 // =================== TERMINAL ===================
