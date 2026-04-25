@@ -31,7 +31,26 @@ let currentUser = null, currentRole = 'user', selectedRole = 'user';
 let logs = [], logFilter = 'all', activeSyscall = null;
 let sessionId = 'SC-' + Math.floor(Math.random()*9000+1000);
 
+
 // =================== LOGIN ===================
+function showToast(message, type = 'success') {
+  const icons = { success: '✓', error: '✗', warning: '⚠', info: 'ℹ' };
+
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <span>${icons[type] || ''}</span>
+    <span>${message}</span>
+    <div class="toast-bar"></div>
+  `;
+
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
 function selectRole(el) {
   document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
@@ -70,24 +89,6 @@ function doLogin() {
   addLog(user, 'login', '', 1, 'success', 0);
   initApp();
   showToast(`Welcome ${USERS[currentUser].name}`, 'success');
-}
-
-function showToast(message, type = 'success') {
-  const icons = { success: '✓', error: '✗', warning: '⚠', info: 'ℹ' };
-
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.innerHTML = `
-    <span>${icons[type] || ''}</span>
-    <span>${message}</span>
-    <div class="toast-bar"></div>
-  `;
-
-  container.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
 }
 
 function showErr(msg) {
